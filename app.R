@@ -1,7 +1,7 @@
 library(shiny)
 
 ui <- fluidPage(
-  titlePanel("Meu Projeto Shiny"),
+  titlePanel("Nosso Projeto Shiny"),
   h2("Olá, mundo!")
 )
 

@@ -10,7 +10,7 @@ Desenvolver uma aplicação interativa utilizando o framework Shiny.
 
 - Arthur
 - Rafael
-- João
+- João Carvalho
 - Lucas
 
 ## Tecnologias utilizadas
