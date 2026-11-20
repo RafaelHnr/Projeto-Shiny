@@ -7,7 +7,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  
+  dados_prontos <- readRDS("Dados Tratados/dados_prontos.rds") 
 }
 
 shinyApp(ui = ui, server = server)
