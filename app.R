@@ -1,8 +1,8 @@
 library(shiny)
 
 ui <- fluidPage(
-  titlePanel("arthur goat"),
-  h2("Olá, mundo!")
+  titlePanel("corinthians maior do Brasil"),
+  h1("TRABAI DE MCCD")
 )
 
 server <- function(input, output, session) {
