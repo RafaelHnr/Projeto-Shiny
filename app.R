@@ -1,7 +1,7 @@
 library(shiny)
 
 ui <- fluidPage(
-  titlePanel("tarot é real"),
+  titlePanel("tarot é coisa de idiota"),
   h1("TRABAI DE MCCD")
 )
 
