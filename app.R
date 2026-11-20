@@ -1,7 +1,7 @@
 library(shiny)
 
 ui <- fluidPage(
-  titlePanel("TASM PIOR FILME DO HOMEM ARANHA"),
+  titlePanel("arthur goat"),
   h2("Olá, mundo!")
 )
 
