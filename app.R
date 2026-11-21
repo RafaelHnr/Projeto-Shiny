@@ -14,7 +14,7 @@ ui <- fluidPage(
              h3("escolhemo pq sim carai")
     ),
     
-    tabPanel("Evolução do cinema ao longo dos anos",
+    tabPanel("Evolução do Cinema ao Longo dos Anos",
              sidebarLayout(
                sidebarPanel(
                  selectInput(
@@ -34,7 +34,7 @@ ui <- fluidPage(
                  
                  selectInput(
                    inputId = "nacionalidade",
-                   label = "Qual a Nacionalidade? (Você também pode esolher as duas)",
+                   label = "Qual a Nacionalidade? (Você também pode escolher as duas)",
                    choices = c("Brasileira", "Estrangeira"),
                    selected = c("Brasileira", "Estrangeira"),
                    multiple = TRUE
@@ -43,7 +43,9 @@ ui <- fluidPage(
                
                mainPanel(
                  h3("Evolução do Cinema ao Longo dos Anos"),
-                 plotOutput("grafico_evolucao", height = "500px")
+                 plotOutput("grafico_evolucao", height = "500px"),
+                 h4("Resultados por Ano e Nacionalidade"),
+                 tableOutput(outputId = "tabela_evolucao")
                )
              )
     )
@@ -53,7 +55,7 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  output$grafico_evolucao <- renderPlot({
+  dados_grafico <- reactive({
     
     req(input$genero, input$indicador, input$nacionalidade)
     
@@ -74,23 +76,45 @@ server <- function(input, output, session) {
       locale = locale(decimal_mark = ",", grouping_mark = ".")
     )
     
-    dados_grafico <- dados_filtrados %>%
+    dados_filtrados %>%
       group_by(ano_de_exibicao, nacionalidade_da_obra) %>%
       summarise(
         valor = sum(valor, na.rm = TRUE),
         .groups = "drop"
       )
     
-    ggplot(dados_grafico,
+  })
+  
+  output$tabela_evolucao <- renderTable({
+    
+    tabela <- dados_grafico()
+    
+    names(tabela) <- c("Ano", "Nacionalidade", "Total")
+    
+    tabela$Total <- format(
+      tabela$Total,
+      big.mark = ".",
+      decimal.mark = ",",
+      scientific = FALSE,
+      trim = TRUE
+    )
+    
+    tabela
+    
+  }, striped = TRUE, hover = TRUE, bordered = TRUE, rownames = FALSE)
+  
+  output$grafico_evolucao <- renderPlot({
+    
+    ggplot(dados_grafico(),
            aes(x = ano_de_exibicao,
                y = valor,
                color = nacionalidade_da_obra,
                group = nacionalidade_da_obra)) +
-      geom_line(linewidth = 1.2) +
-      geom_point(size = 2.5) +
+      geom_line(linewidth = 1.4) +
+      geom_point(size = 2.9) +
       scale_color_manual(
-        values = c("Brasileira" = "blue",
-                   "Estrangeira" = "red")
+        values = c("Brasileira" = "mediumseagreen",
+                   "Estrangeira" = "firebrick2")
       ) +
       scale_x_discrete(
         breaks = as.character(seq(2009, 2025, by = 2))
