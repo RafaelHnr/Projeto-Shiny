@@ -6,12 +6,12 @@ library(readr)
 dados_prontos <- readRDS("Dados Tratados/dados_prontos.rds")
 
 ui <- fluidPage(
-  titlePanel("tarot é coisa de idiota"),
+  titlePanel("Filmes no Brasil"),
   
   tabsetPanel(
     
-    tabPanel("Apresentação dos Dados",
-             h3("escolhemo pq sim carai")
+    tabPanel("Introdução a base de dados",
+             h3("teste")
     ),
     
     tabPanel("Evolução do Cinema ao Longo dos Anos",
