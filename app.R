@@ -17,7 +17,7 @@ tema <- bs_theme(
 )
 
 ui <- page_navbar(
-  title = "CINE.DADOS",
+  title = "Shiny.App",
   id = "pagina",
   theme = tema,
   bg = "#C5D5CA",
@@ -293,7 +293,7 @@ ui <- page_navbar(
   # ABA 1: APRESENTAÇÃO ESTILO SITE (SCROLL)
   # ==========================================
   nav_panel(
-    "Início",
+    "Apresentação dos Dados",
     
     div(
       class = "hero",
@@ -350,7 +350,7 @@ ui <- page_navbar(
           div(class = "subtitulo-dourado", "BASTIDORES"),
           h2(class = "titulo-editorial", "Metodologia"),
           p(class = "texto-editorial",
-            "O trabalho seguiu as etapas da Análise Exploratória de Dados (AED) utilizando a linguagem R e o pacote Shiny para construção da interface reativa."
+            "O trabalho seguiu as etapas da Análise Exploratória de Dados (AED) utilizando a linguagem R e o pacote Shiny para construção da interface reativa, com estilização feita em CSS."
           ),
           p(class = "texto-editorial",
             "Os registros brutos da ANCINE passaram por limpeza, conversão de formatos numéricos e padronização de categorias ausentes ('ND'). O desenvolvimento em equipe foi versionado via GitHub, com apoio técnico do Gemini na estruturação do código e refino visual."
@@ -386,7 +386,7 @@ ui <- page_navbar(
   # ABA 2: TEXTO FIXO + GRÁFICO + RESUMO KPI
   # ==========================================
   nav_panel(
-    "Evolução do Cinema ao Longo dos Anos",
+    "Retrospectiva do Cinema no Brasil ao Longo dos Anos",
     
     layout_sidebar(
       fillable = FALSE,
@@ -447,7 +447,7 @@ ui <- page_navbar(
   # ABA 3: DISTRIBUIDORAS E CONCENTRAÇÃO
   # ==========================================
   nav_panel(
-    "Distribuidoras",
+    "Panorama das Distribuidoras",
     layout_sidebar(
       fillable = FALSE,
       sidebar = sidebar(
@@ -516,7 +516,7 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   
   observeEvent(input$explorar, {
-    nav_select("pagina", "Evolução do Cinema ao Longo dos Anos")
+    nav_select("pagina", "Retrospectiva do Cinema no Brasil ao Longo dos Anos")
   })
   
   # ==========================================
