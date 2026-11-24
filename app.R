@@ -132,7 +132,6 @@ ui <- page_navbar(
         text-align: center;
         transition: all 0.2s ease;
       }
-      /* Desloca o 9º item (início da 3ª fileira) para centralizar os 3 últimos */
       .var-pill:nth-child(9) {
         grid-column: 2 / span 2;
       }
@@ -146,7 +145,6 @@ ui <- page_navbar(
         margin-bottom: 6px;
       }
 
-      /* Adaptação responsiva para telas menores */
       @media (max-width: 992px) {
         .grade-variaveis {
           grid-template-columns: repeat(2, 1fr);
@@ -154,12 +152,6 @@ ui <- page_navbar(
         .var-pill, .var-pill:nth-child(9) {
           grid-column: span 1;
         }
-      }
-
-      /* Mantém estilo das abas 2 e 3 */
-      .card {
-        background-color: #1E2430 !important;
-        border: 1px solid #323B4B !important;
       }
     "))
   ),
@@ -195,7 +187,7 @@ ui <- page_navbar(
       )
     ),
     
-    # 2. FAIXA DE DESTAQUES (SEM CAIXAS DE DASHBOARD)
+    # 2. FAIXA DE DESTAQUES
     div(
       class = "secao-editorial",
       div(
@@ -206,7 +198,7 @@ ui <- page_navbar(
       )
     ),
     
-    # 3. INTRODUÇÃO E METODOLOGIA EM TEXTO FLUIDO
+    # 3. INTRODUÇÃO E METODOLOGIA
     div(
       id = "sobre-projeto",
       class = "secao-editorial",
@@ -246,19 +238,14 @@ ui <- page_navbar(
       
       div(
         class = "grade-variaveis",
-        # Fileira 1 (4 itens)
         div(class = "var-pill", strong("Ano de Exibição"), "Ano em que o filme esteve em cartaz (2009 a 2025)"),
         div(class = "var-pill", strong("Data de Lançamento"), "Data oficial de estreia comercial no país"),
         div(class = "var-pill", strong("Título da Obra"), "Nome comercial registrado do longa-metragem"),
         div(class = "var-pill", strong("Registro (CPB / ROE)"), "Certificado de Produto Brasileiro ou Obra Estrangeira"),
-        
-        # Fileira 2 (4 itens)
         div(class = "var-pill", strong("Gênero"), "Ficção, Documentário, Animação ou Religiosa"),
         div(class = "var-pill", strong("País Produtor"), "País ou países responsáveis pela produção"),
         div(class = "var-pill", strong("Nacionalidade da Obra"), "Classificação entre obra Brasileira ou Estrangeira"),
         div(class = "var-pill", strong("Empresa Distribuidora"), "Distribuidora responsável pelo lançamento"),
-        
-        # Fileira 3 (3 itens centralizados)
         div(class = "var-pill", strong("Origem da Distribuidora"), "Capital Nacional, Estrangeiro ou Codistribuição"),
         div(class = "var-pill", strong("Público Anual"), "Total de espectadores registrados no ano"),
         div(class = "var-pill", strong("Renda Anual (R$)"), "Bilheteria bruta arrecadada em reais")
@@ -267,61 +254,47 @@ ui <- page_navbar(
   ),
   
   # ==========================================
-  # ABA 2: ANÁLISE TEMPORAL (3 TIPOS DE INPUT + 2 OUTPUTS + DOWNLOAD)
+  # ABA 2: RESETADA PARA O CÓDIGO ORIGINAL
   # ==========================================
   nav_panel(
-    "Evolução ao Longo dos Anos",
-    
-    layout_sidebar(
-      sidebar = sidebar(
-        bg = "#1E2430",
-        title = "Filtros da Análise",
-        
+    "Evolução do Cinema ao Longo dos Anos",
+    sidebarLayout(
+      sidebarPanel(
         selectInput(
           inputId = "genero",
-          label = "1. Selecione o gênero:",
+          label = "Selecione o gênero:",
           choices = sort(unique(dados_prontos$genero)),
           selected = "Animação",
           multiple = FALSE
         ),
         
-        radioButtons(
+        selectInput(
           inputId = "indicador",
-          label = "2. O que você quer avaliar?",
+          label = "O que você quer avaliar?",
           choices = c("Público", "Dinheiro Arrecadado"),
-          selected = "Público"
+          multiple = FALSE
         ),
         
-        checkboxGroupInput(
+        selectInput(
           inputId = "nacionalidade",
-          label = "3. Nacionalidade da obra:",
+          label = "Qual a Nacionalidade? (Você também pode escolher as duas)",
           choices = c("Brasileira", "Estrangeira"),
-          selected = c("Brasileira", "Estrangeira")
-        ),
-        
-        hr(),
-        
-        downloadButton(
-          outputId = "baixar_tabela",
-          label = "Baixar dados filtrados (.csv)",
-          class = "btn-warning w-100"
+          selected = c("Brasileira", "Estrangeira"),
+          multiple = TRUE
         )
       ),
       
-      card(
-        card_header(strong("Evolução Temporal por Nacionalidade")),
-        plotOutput("grafico_evolucao", height = "460px")
-      ),
-      
-      card(
-        card_header(strong("Resultados Consolidados por Ano e Nacionalidade")),
-        tableOutput("tabela_evolucao")
+      mainPanel(
+        h3("Evolução do Cinema ao Longo dos Anos"),
+        plotOutput("grafico_evolucao", height = "500px"),
+        h4("Resultados por Ano e Nacionalidade"),
+        tableOutput(outputId = "tabela_evolucao")
       )
     )
   ),
   
   # ==========================================
-  # ABA 3: SEGUNDA ANÁLISE (ESTRUTURA PRONTA PARA PREENCHER)
+  # ABA 3: SEGUNDA ANÁLISE
   # ==========================================
   nav_panel(
     "Ranking e Comparativo",
@@ -356,7 +329,7 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   
   observeEvent(input$explorar, {
-    nav_select("pagina", "Evolução ao Longo dos Anos")
+    nav_select("pagina", "Evolução do Cinema ao Longo dos Anos")
   })
   
   dados_grafico <- reactive({
@@ -368,10 +341,10 @@ server <- function(input, output, session) {
         nacionalidade_da_obra %in% input$nacionalidade
       )
     
-    valores <- if (input$indicador == "Público") {
-      dados_filtrados$publico_no_ano_de_exibicao
+    if (input$indicador == "Público") {
+      valores <- dados_filtrados$publico_no_ano_de_exibicao
     } else {
-      dados_filtrados$renda_r_no_ano_de_exibicao
+      valores <- dados_filtrados$renda_r_no_ano_de_exibicao
     }
     
     dados_filtrados$valor <- parse_number(
@@ -387,47 +360,9 @@ server <- function(input, output, session) {
       )
   })
   
-  output$grafico_evolucao <- renderPlot({
-    ggplot(dados_grafico(),
-           aes(x = ano_de_exibicao,
-               y = valor,
-               color = nacionalidade_da_obra,
-               group = nacionalidade_da_obra)) +
-      geom_line(linewidth = 1.4) +
-      geom_point(size = 3) +
-      scale_color_manual(
-        values = c("Brasileira" = "#D9A85F",
-                   "Estrangeira" = "#4EA8DE")
-      ) +
-      scale_x_discrete(
-        breaks = as.character(seq(2009, 2025, by = 2))
-      ) +
-      scale_y_continuous(
-        labels = function(x) format(x, big.mark = ".", scientific = FALSE, trim = TRUE)
-      ) +
-      labs(
-        x = "Ano de Exibição",
-        y = if (input$indicador == "Público") "Quantidade de Espectadores" else "Dinheiro Arrecadado (R$)",
-        color = "Nacionalidade"
-      ) +
-      theme_minimal() +
-      theme(
-        plot.background = element_rect(fill = "#1E2430", color = NA),
-        panel.background = element_rect(fill = "#1E2430", color = NA),
-        panel.grid.major = element_line(color = "#323B4B", linewidth = 0.4),
-        panel.grid.minor = element_blank(),
-        axis.text.x = element_text(size = 12, color = "#D0D3DA"),
-        axis.text.y = element_text(size = 11, color = "#D0D3DA"),
-        axis.title.x = element_text(size = 13, color = "#FFFFFF", margin = margin(t = 10)),
-        axis.title.y = element_text(size = 13, color = "#FFFFFF", margin = margin(r = 10)),
-        legend.position = "bottom",
-        legend.text = element_text(size = 12, color = "#F5F5F5"),
-        legend.title = element_text(size = 12, color = "#D9A85F", face = "bold")
-      )
-  })
-  
   output$tabela_evolucao <- renderTable({
     tabela <- dados_grafico()
+    
     names(tabela) <- c("Ano", "Nacionalidade", "Total")
     
     tabela$Total <- format(
@@ -437,17 +372,51 @@ server <- function(input, output, session) {
       scientific = FALSE,
       trim = TRUE
     )
+    
     tabela
-  }, striped = TRUE, hover = TRUE, bordered = TRUE, rownames = FALSE, width = "100%")
+  }, striped = TRUE, hover = TRUE, bordered = TRUE, rownames = FALSE)
   
-  output$baixar_tabela <- downloadHandler(
-    filename = function() {
-      paste0("cinema_brasil_", tolower(input$genero), ".csv")
-    },
-    content = function(file) {
-      write.csv2(dados_grafico(), file, row.names = FALSE)
-    }
-  )
+  output$grafico_evolucao <- renderPlot({
+    ggplot(dados_grafico(),
+           aes(x = ano_de_exibicao,
+               y = valor,
+               color = nacionalidade_da_obra,
+               group = nacionalidade_da_obra)) +
+      geom_line(linewidth = 1.4) +
+      geom_point(size = 2.9) +
+      scale_color_manual(
+        values = c("Brasileira" = "mediumseagreen",
+                   "Estrangeira" = "firebrick2")
+      ) +
+      scale_x_discrete(
+        breaks = as.character(seq(2009, 2025, by = 2))
+      ) +
+      scale_y_continuous(
+        labels = function(x) format(
+          x, big.mark = ".", scientific = FALSE, trim = TRUE
+        )
+      ) +
+      labs(
+        x = "Ano de Exibição",
+        y = if (input$indicador == "Público") {
+          "Quantidade de Espectadores"
+        } else {
+          "Dinheiro Arrecadado (R$)"
+        },
+        color = "Nacionalidade"
+      ) +
+      theme_minimal() +
+      theme(
+        axis.text.x = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        legend.position = "bottom",
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12)
+      )
+  })
+  
 }
 
 shinyApp(ui = ui, server = server)
