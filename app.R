@@ -3,6 +3,7 @@ library(bslib)
 library(dplyr)
 library(ggplot2)
 library(readr)
+library(plotly)
 
 dados_prontos <- readRDS("Dados Tratados/dados_prontos.rds")
 
@@ -87,7 +88,7 @@ ui <- page_navbar(
         line-height: 1.8;
       }
 
-      /* Destaques numéricos leves (sem caixa pesada) */
+      /* Destaques numéricos leves */
       .faixa-numeros {
         display: flex;
         justify-content: space-around;
@@ -153,6 +154,15 @@ ui <- page_navbar(
           grid-column: span 1;
         }
       }
+
+      .card {
+        background-color: #1E2430 !important;
+        border: 1px solid #323B4B !important;
+        overflow: visible !important;
+      }
+      .card-body {
+        overflow: visible !important;
+      }
     "))
   ),
   
@@ -162,7 +172,6 @@ ui <- page_navbar(
   nav_panel(
     "Início",
     
-    # 1. BANNER PRINCIPAL
     div(
       class = "hero",
       div(class = "tag-topo", "CINEMA • DADOS • BRASIL"),
@@ -187,7 +196,6 @@ ui <- page_navbar(
       )
     ),
     
-    # 2. FAIXA DE DESTAQUES
     div(
       class = "secao-editorial",
       div(
@@ -198,7 +206,6 @@ ui <- page_navbar(
       )
     ),
     
-    # 3. INTRODUÇÃO E METODOLOGIA
     div(
       id = "sobre-projeto",
       class = "secao-editorial",
@@ -229,7 +236,6 @@ ui <- page_navbar(
       )
     ),
     
-    # 4. VARIÁVEIS EM GRADE 4 + 4 + 3 CENTRALIZADA
     div(
       class = "secao-editorial",
       div(class = "subtitulo-dourado", "DICIONÁRIO DE DADOS"),
@@ -254,40 +260,60 @@ ui <- page_navbar(
   ),
   
   # ==========================================
-  # ABA 2: RESETADA PARA O CÓDIGO ORIGINAL
+  # ABA 2: GRÁFICO 100% VISÍVEL SEM BARRA INTERNA
   # ==========================================
   nav_panel(
     "Evolução do Cinema ao Longo dos Anos",
-    sidebarLayout(
-      sidebarPanel(
+    
+    layout_sidebar(
+      fillable = FALSE, # Impede que o card esprema o gráfico e crie barra de rolagem interna!
+      sidebar = sidebar(
+        width = 280,
+        bg = "#1E2430",
+        title = "Filtros da Análise",
+        
         selectInput(
           inputId = "genero",
-          label = "Selecione o gênero:",
+          label = "1. Selecione o gênero:",
           choices = sort(unique(dados_prontos$genero)),
           selected = "Animação",
           multiple = FALSE
         ),
         
-        selectInput(
+        radioButtons(
           inputId = "indicador",
-          label = "O que você quer avaliar?",
+          label = "2. O que você quer avaliar?",
           choices = c("Público", "Dinheiro Arrecadado"),
-          multiple = FALSE
+          selected = "Público"
         ),
         
-        selectInput(
+        checkboxGroupInput(
           inputId = "nacionalidade",
-          label = "Qual a Nacionalidade? (Você também pode escolher as duas)",
+          label = "3. Nacionalidade da obra:",
           choices = c("Brasileira", "Estrangeira"),
-          selected = c("Brasileira", "Estrangeira"),
-          multiple = TRUE
+          selected = c("Brasileira", "Estrangeira")
+        ),
+        
+        hr(),
+        
+        downloadButton(
+          outputId = "baixar_tabela",
+          label = "Baixar dados filtrados (.csv)",
+          class = "btn-warning w-100"
         )
       ),
       
-      mainPanel(
-        h3("Evolução do Cinema ao Longo dos Anos"),
-        plotOutput("grafico_evolucao", height = "500px"),
-        h4("Resultados por Ano e Nacionalidade"),
+      # Gráfico inteiro visível de ponta a ponta sem barra de rolagem interna
+      card(
+        card_header(
+          style = "font-size: 17px; font-weight: 700; color: #D9A85F;",
+          textOutput("titulo_grafico_aba2", inline = TRUE)
+        ),
+        plotlyOutput("grafico_evolucao", height = "480px", width = "100%")
+      ),
+      
+      card(
+        card_header(strong("Resultados Consolidados por Ano e Nacionalidade")),
         tableOutput(outputId = "tabela_evolucao")
       )
     )
@@ -352,17 +378,124 @@ server <- function(input, output, session) {
       locale = locale(decimal_mark = ",", grouping_mark = ".")
     )
     
-    dados_filtrados %>%
+    anos_completos <- as.character(2009:2025)
+    
+    resumo <- dados_filtrados %>%
+      mutate(ano_de_exibicao = as.character(ano_de_exibicao)) %>%
       group_by(ano_de_exibicao, nacionalidade_da_obra) %>%
       summarise(
         valor = sum(valor, na.rm = TRUE),
         .groups = "drop"
       )
+    
+    expand.grid(
+      ano_de_exibicao = anos_completos,
+      nacionalidade_da_obra = input$nacionalidade,
+      stringsAsFactors = FALSE
+    ) %>%
+      left_join(resumo, by = c("ano_de_exibicao", "nacionalidade_da_obra")) %>%
+      mutate(valor = ifelse(is.na(valor), 0, valor))
+  })
+  
+  output$titulo_grafico_aba2 <- renderText({
+    paste0(input$indicador, " — Gênero: ", input$genero, " (2009–2025)")
+  })
+  
+  output$grafico_evolucao <- renderPlotly({
+    df <- dados_grafico()
+    eh_dinheiro <- input$indicador == "Dinheiro Arrecadado"
+    
+    cores <- c(
+      "Brasileira" = "#D9A85F",
+      "Estrangeira" = "#4EA8DE"
+    )
+    
+    preenchimentos <- c(
+      "Brasileira" = "rgba(217, 168, 95, 0.16)",
+      "Estrangeira" = "rgba(78, 168, 222, 0.16)"
+    )
+    
+    p <- plot_ly(height = 480)
+    
+    for (nac in unique(df$nacionalidade_da_obra)) {
+      sub_df <- df %>% filter(nacionalidade_da_obra == nac)
+      
+      valor_formatado <- format(
+        round(sub_df$valor, 2),
+        big.mark = ".",
+        decimal.mark = ",",
+        scientific = FALSE,
+        trim = TRUE
+      )
+      
+      texto_hover <- if (eh_dinheiro) {
+        paste0("<b>", nac, " (", sub_df$ano_de_exibicao, ")</b><br>Renda: R$ ", valor_formatado)
+      } else {
+        paste0("<b>", nac, " (", sub_df$ano_de_exibicao, ")</b><br>Público: ", valor_formatado, " espectadores")
+      }
+      
+      p <- p %>%
+        add_trace(
+          data = sub_df,
+          x = ~ano_de_exibicao,
+          y = ~valor,
+          name = nac,
+          type = "scatter",
+          mode = "lines+markers",
+          fill = "tozeroy",
+          fillcolor = preenchimentos[[nac]],
+          line = list(color = cores[[nac]], width = 3),
+          marker = list(color = cores[[nac]], size = 7),
+          text = texto_hover,
+          hoverinfo = "text"
+        )
+    }
+    
+    p %>%
+      layout(
+        paper_bgcolor = "#1E2430",
+        plot_bgcolor = "#1E2430",
+        margin = list(l = 85, r = 25, t = 20, b = 70),
+        hovermode = "x unified",
+        hoverlabel = list(
+          bgcolor = "#151923",
+          bordercolor = "#D9A85F",
+          font = list(color = "#F5F5F5", size = 13)
+        ),
+        xaxis = list(
+          title = list(text = "Ano de Exibição", font = list(color = "#FFFFFF", size = 14)),
+          tickfont = list(color = "#D0D3DA", size = 12),
+          gridcolor = "#283040",
+          zeroline = FALSE,
+          fixedrange = TRUE
+        ),
+        yaxis = list(
+          title = list(
+            text = if (eh_dinheiro) "Dinheiro Arrecadado (R$)" else "Quantidade de Espectadores",
+            font = list(color = "#FFFFFF", size = 14)
+          ),
+          tickfont = list(color = "#D0D3DA", size = 12),
+          gridcolor = "#323B4B",
+          zeroline = FALSE,
+          separatethousands = TRUE,
+          fixedrange = TRUE
+        ),
+        legend = list(
+          orientation = "h",
+          x = 0.5,
+          xanchor = "center",
+          y = -0.16,
+          font = list(color = "#F5F5F5", size = 13)
+        )
+      ) %>%
+      config(
+        displayModeBar = FALSE,
+        responsive = TRUE
+      )
   })
   
   output$tabela_evolucao <- renderTable({
     tabela <- dados_grafico()
-    
     names(tabela) <- c("Ano", "Nacionalidade", "Total")
     
     tabela$Total <- format(
@@ -372,51 +505,17 @@ server <- function(input, output, session) {
       scientific = FALSE,
       trim = TRUE
     )
-    
     tabela
-  }, striped = TRUE, hover = TRUE, bordered = TRUE, rownames = FALSE)
+  }, striped = TRUE, hover = TRUE, bordered = TRUE, rownames = FALSE, width = "100%")
   
-  output$grafico_evolucao <- renderPlot({
-    ggplot(dados_grafico(),
-           aes(x = ano_de_exibicao,
-               y = valor,
-               color = nacionalidade_da_obra,
-               group = nacionalidade_da_obra)) +
-      geom_line(linewidth = 1.4) +
-      geom_point(size = 2.9) +
-      scale_color_manual(
-        values = c("Brasileira" = "mediumseagreen",
-                   "Estrangeira" = "firebrick2")
-      ) +
-      scale_x_discrete(
-        breaks = as.character(seq(2009, 2025, by = 2))
-      ) +
-      scale_y_continuous(
-        labels = function(x) format(
-          x, big.mark = ".", scientific = FALSE, trim = TRUE
-        )
-      ) +
-      labs(
-        x = "Ano de Exibição",
-        y = if (input$indicador == "Público") {
-          "Quantidade de Espectadores"
-        } else {
-          "Dinheiro Arrecadado (R$)"
-        },
-        color = "Nacionalidade"
-      ) +
-      theme_minimal() +
-      theme(
-        axis.text.x = element_text(size = 13),
-        axis.text.y = element_text(size = 12),
-        axis.title.x = element_text(size = 14),
-        axis.title.y = element_text(size = 14),
-        legend.position = "bottom",
-        legend.text = element_text(size = 12),
-        legend.title = element_text(size = 12)
-      )
-  })
-  
+  output$baixar_tabela <- downloadHandler(
+    filename = function() {
+      paste0("cinema_brasil_", tolower(input$genero), ".csv")
+    },
+    content = function(file) {
+      write.csv2(dados_grafico(), file, row.names = FALSE)
+    }
+  )
 }
 
 shinyApp(ui = ui, server = server)
