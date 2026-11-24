@@ -179,7 +179,7 @@ ui <- page_navbar(
         margin-bottom: 15px;
       }
 
-      /* Cartões de resumo que substituem a tabela */
+      /* Cartões de resumo */
       .kpi-box {
         background: #1E2430;
         border: 1px solid #323B4B;
@@ -196,10 +196,11 @@ ui <- page_navbar(
         font-weight: 700;
       }
       .kpi-valor {
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 800;
         color: #D9A85F;
         margin-bottom: 4px;
+        word-break: break-word;
       }
       .kpi-sub {
         font-size: 13px;
@@ -317,7 +318,7 @@ ui <- page_navbar(
         selectInput(
           inputId = "genero",
           label = "1. Selecione o gênero:",
-          choices = c("Todos", sort(unique(dados_prontos$genero))),
+          choices = c("Todos", sort(unique(as.character(dados_prontos$genero)))),
           selected = "Todos",
           multiple = FALSE
         ),
@@ -345,14 +346,12 @@ ui <- page_navbar(
         )
       ),
       
-      # 1. CAIXINHA FIXA GENÉRICA ACIMA DO GRÁFICO
       div(
         class = "aviso-fixo-grafico",
         strong("Como explorar este painel: "),
         "Utilize os filtros à esquerda para alternar o gênero cinematográfico (ou visualizar todos juntos), a métrica de desempenho e a origem das obras. Passe o cursor sobre qualquer ponto do gráfico para visualizar os valores exatos de cada ano e observe o impacto da retração de 2020–2021."
       ),
       
-      # 2. GRÁFICO INTERATIVO (OUTPUT 1)
       card(
         card_header(
           style = "font-size: 17px; font-weight: 700; color: #D9A85F;",
@@ -361,39 +360,76 @@ ui <- page_navbar(
         plotlyOutput("grafico_evolucao", height = "460px", width = "100%")
       ),
       
-      # 3. CARTÕES DE INDICADORES-CHAVE (OUTPUT 2)
       uiOutput("resumo_kpis_aba2")
     )
   ),
   
   # ==========================================
-  # ABA 3: SEGUNDA ANÁLISE
+  # ABA 3: DISTRIBUIDORAS E CONCENTRAÇÃO
   # ==========================================
   nav_panel(
-    "Ranking e Comparativo",
+    "Distribuidoras",
     layout_sidebar(
+      fillable = FALSE, # Impede o gráfico de esticar/encolher conforme o tamanho da tabela
       sidebar = sidebar(
+        width = 280,
         bg = "#1E2430",
-        title = "Parâmetros do Ranking",
+        title = "Filtros da análise",
         sliderInput(
           inputId = "periodo_aba3",
-          label = "Intervalo de anos:",
+          label = "1. Intervalo de anos:",
           min = 2009,
           max = 2025,
           value = c(2015, 2025),
           sep = ""
         ),
+        selectInput(
+          inputId = "nacionalidade_aba3",
+          label = "2. Nacionalidade da obra:",
+          choices = c("Todas", sort(unique(na.omit(as.character(dados_prontos$nacionalidade_da_obra))))),
+          selected = "Todas"
+        ),
+        selectInput(
+          inputId = "genero_aba3",
+          label = "3. Gênero:",
+          choices = c("Todos", sort(unique(na.omit(as.character(dados_prontos$genero))))),
+          selected = "Todos"
+        ),
+        radioButtons(
+          inputId = "metrica_aba3",
+          label = "4. Classificar distribuidoras por:",
+          choices = c("Público", "Renda"),
+          selected = "Renda"
+        ),
         numericInput(
           inputId = "top_n",
-          label = "Quantidade de itens no ranking:",
+          label = "5. Distribuidoras no ranking:",
           value = 10,
-          min = 3,
-          max = 25
+          min = 5,
+          max = 25,
+          step = 1
         )
       ),
+      
+      div(
+        class = "aviso-fixo-grafico",
+        strong("Como explorar este painel: "),
+        "Escolha o período, o perfil dos filmes e se quer comparar as distribuidoras por público ou renda. O ranking mostra as maiores no recorte; os indicadores resumem a concentração dos resultados."
+      ),
+      
+      uiOutput("resumo_kpis_aba3"),
+      
       card(
-        card_header(strong("Espaço para o 2º Gráfico (plotOutput) e Tabela/Texto")),
-        p("Aqui podemos colocar o ranking de gêneros ou maiores bilheterias usando os filtros ao lado.")
+        card_header(
+          style = "font-size: 17px; font-weight: 700; color: #D9A85F;",
+          textOutput("titulo_grafico_aba3", inline = TRUE)
+        ),
+        plotlyOutput("grafico_distribuidoras", height = "460px", width = "100%")
+      ),
+      
+      card(
+        card_header(strong("Detalhamento das distribuidoras no ranking")),
+        tableOutput("tabela_distribuidoras")
       )
     )
   )
@@ -405,15 +441,17 @@ server <- function(input, output, session) {
     nav_select("pagina", "Evolução do Cinema ao Longo dos Anos")
   })
   
-  # Base filtrada (suporta tanto "Todos" quanto um gênero específico)
+  # ==========================================
+  # LÓGICA DA ABA 2
+  # ==========================================
   dados_filtrados_base <- reactive({
     req(input$genero, input$nacionalidade)
     
     dados_temp <- dados_prontos %>%
-      filter(nacionalidade_da_obra %in% input$nacionalidade)
+      filter(as.character(nacionalidade_da_obra) %in% input$nacionalidade)
     
     if (input$genero != "Todos") {
-      dados_temp <- dados_temp %>% filter(genero == input$genero)
+      dados_temp <- dados_temp %>% filter(as.character(genero) == input$genero)
     }
     
     dados_temp %>%
@@ -448,7 +486,6 @@ server <- function(input, output, session) {
     paste0(input$indicador, " — ", nome_gen, " (2009–2025)")
   })
   
-  # Output 1: Gráfico Interativo
   output$grafico_evolucao <- renderPlotly({
     df <- dados_grafico()
     eh_dinheiro <- input$indicador == "Dinheiro Arrecadado"
@@ -532,23 +569,19 @@ server <- function(input, output, session) {
       config(displayModeBar = FALSE, responsive = TRUE)
   })
   
-  # Output 2: 3 Cartões de Indicadores Estratégicos
   output$resumo_kpis_aba2 <- renderUI({
     df_graf <- dados_grafico()
     df_base <- dados_filtrados_base()
     eh_dinheiro <- input$indicador == "Dinheiro Arrecadado"
     
-    # 1. Ano de Pico
     linha_pico <- df_graf %>% arrange(desc(valor)) %>% slice(1)
     valor_pico_fmt <- format(round(linha_pico$valor, 0), big.mark = ".", decimal.mark = ",", scientific = FALSE, trim = TRUE)
     texto_pico <- if (eh_dinheiro) paste0("R$ ", valor_pico_fmt) else paste0(valor_pico_fmt, " espectadores")
     
-    # 2. Participação do Cinema Nacional no recorte
     total_geral <- sum(df_graf$valor, na.rm = TRUE)
     total_br <- sum(df_graf$valor[df_graf$nacionalidade_da_obra == "Brasileira"], na.rm = TRUE)
     share_br <- if (total_geral > 0) round((total_br / total_geral) * 100, 1) else 0
     
-    # 3. Ticket Médio (Renda Total / Público Total no filtro atual)
     pub_tot <- sum(df_base$pub_num, na.rm = TRUE)
     renda_tot <- sum(df_base$renda_num, na.rm = TRUE)
     ticket <- if (pub_tot > 0) renda_tot / pub_tot else 0
@@ -576,6 +609,222 @@ server <- function(input, output, session) {
       )
     )
   })
+  
+  # ==========================================
+  # LÓGICA DA ABA 3 (CORRIGIDA)
+  # ==========================================
+  dados_aba3 <- reactive({
+    req(input$periodo_aba3, input$nacionalidade_aba3, input$genero_aba3)
+    
+    df <- dados_prontos %>%
+      mutate(
+        # as.character() antes de as.integer() evita o bug de fator!
+        ano_num = suppressWarnings(as.integer(as.character(ano_de_exibicao))),
+        dist_clean = trimws(as.character(empresa_distribuidora)),
+        origem_clean = trimws(as.character(origem_da_empresa_distribuidora)),
+        publico_num = parse_number(
+          as.character(publico_no_ano_de_exibicao),
+          locale = locale(decimal_mark = ",", grouping_mark = ".")
+        ),
+        renda_num = parse_number(
+          as.character(renda_r_no_ano_de_exibicao),
+          locale = locale(decimal_mark = ",", grouping_mark = ".")
+        )
+      ) %>%
+      filter(
+        !is.na(ano_num),
+        ano_num >= input$periodo_aba3[1],
+        ano_num <= input$periodo_aba3[2],
+        !is.na(dist_clean),
+        dist_clean != "",
+        dist_clean != "ND"
+      )
+    
+    if (input$nacionalidade_aba3 != "Todas") {
+      df <- df %>% filter(as.character(nacionalidade_da_obra) == input$nacionalidade_aba3)
+    }
+    if (input$genero_aba3 != "Todos") {
+      df <- df %>% filter(as.character(genero) == input$genero_aba3)
+    }
+    
+    df
+  })
+  
+  distribuidores_aba3 <- reactive({
+    req(input$metrica_aba3)
+    df_base <- dados_aba3()
+    if (nrow(df_base) == 0) return(tibble())
+    
+    # Agrupa APENAS pela distribuidora para evitar nomes duplicados no eixo Y
+    df <- df_base %>%
+      group_by(dist_clean) %>%
+      summarise(
+        origem = paste(unique(na.omit(origem_clean[origem_clean != ""])), collapse = " / "),
+        filmes = n_distinct(titulo_da_obra, na.rm = TRUE),
+        publico = sum(publico_num, na.rm = TRUE),
+        renda = sum(renda_num, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      mutate(
+        origem = ifelse(origem == "", "Não informada", origem),
+        valor = if (input$metrica_aba3 == "Público") publico else renda
+      ) %>%
+      arrange(desc(valor), dist_clean)
+    
+    n_informado <- if (is.null(input$top_n) || is.na(input$top_n)) 10L else as.integer(input$top_n)
+    n <- max(1L, min(25L, n_informado))
+    df %>% slice_head(n = n)
+  })
+  
+  output$titulo_grafico_aba3 <- renderText({
+    paste0(
+      "Top Distribuidoras por ", tolower(input$metrica_aba3),
+      " (", input$periodo_aba3[1], "–", input$periodo_aba3[2], ")"
+    )
+  })
+  
+  output$grafico_distribuidoras <- renderPlotly({
+    df <- distribuidores_aba3()
+    
+    # Se o filtro não retornar nenhuma linha, exibe aviso limpo no próprio gráfico
+    if (nrow(df) == 0) {
+      return(
+        plot_ly(height = 460) %>%
+          layout(
+            paper_bgcolor = "#1E2430",
+            plot_bgcolor = "#1E2430",
+            xaxis = list(visible = FALSE),
+            yaxis = list(visible = FALSE),
+            annotations = list(
+              text = "Nenhum registro encontrado para essa combinação de filtros.",
+              xref = "paper", yref = "paper", x = 0.5, y = 0.5,
+              showarrow = FALSE,
+              font = list(color = "#D9A85F", size = 16)
+            )
+          ) %>%
+          config(displayModeBar = FALSE)
+      )
+    }
+    
+    eh_renda <- input$metrica_aba3 == "Renda"
+    
+    df <- df %>%
+      mutate(
+        # Abrevia nomes gigantes no eixo Y para o gráfico nunca encolher lateralmente
+        nome_curto = ifelse(nchar(dist_clean) > 26, paste0(substr(dist_clean, 1, 24), "..."), dist_clean),
+        rotulo = if (eh_renda) {
+          paste0("R$ ", format(round(valor, 2), big.mark = ".", decimal.mark = ",", nsmall = 2, trim = TRUE))
+        } else {
+          paste0(format(round(valor, 0), big.mark = ".", decimal.mark = ",", scientific = FALSE, trim = TRUE), " espectadores")
+        },
+        dica = paste0(
+          "<b>", dist_clean, "</b><br>",
+          "Origem: ", origem, "<br>",
+          "Filmes no período: ", filmes, "<br>",
+          if (eh_renda) "Renda: " else "Público: ", rotulo
+        )
+      ) %>%
+      arrange(valor)
+    
+    # Garante níveis únicos no eixo Y mesmo se dois nomes curtos coincidirem
+    df$nome_curto <- make.unique(df$nome_curto)
+    df$nome_curto <- factor(df$nome_curto, levels = df$nome_curto)
+    
+    plot_ly(
+      data = df,
+      x = ~valor,
+      y = ~nome_curto,
+      type = "bar",
+      orientation = "h",
+      height = 460,
+      marker = list(color = "#D9A85F"),
+      text = ~dica,
+      textposition = "none", # Evita que o texto HTML apareça escrito dentro das barras!
+      hoverinfo = "text"
+    ) %>%
+      layout(
+        paper_bgcolor = "#1E2430",
+        plot_bgcolor = "#1E2430",
+        margin = list(l = 185, r = 30, t = 15, b = 65),
+        xaxis = list(
+          title = list(
+            text = if (eh_renda) "Renda acumulada (R$)" else "Público acumulado (espectadores)",
+            font = list(color = "#FFFFFF", size = 14)
+          ),
+          tickfont = list(color = "#D0D3DA", size = 12),
+          gridcolor = "#323B4B",
+          zeroline = FALSE,
+          separatethousands = TRUE,
+          tickprefix = if (eh_renda) "R$ " else "",
+          fixedrange = TRUE
+        ),
+        yaxis = list(
+          title = "",
+          tickfont = list(color = "#D0D3DA", size = 12),
+          fixedrange = TRUE
+        ),
+        hoverlabel = list(
+          bgcolor = "#151923",
+          bordercolor = "#D9A85F",
+          font = list(color = "#F5F5F5", size = 13)
+        )
+      ) %>%
+      config(displayModeBar = FALSE, responsive = TRUE)
+  })
+  
+  output$resumo_kpis_aba3 <- renderUI({
+    df_filtro <- dados_aba3()
+    df_top <- distribuidores_aba3()
+    eh_renda <- input$metrica_aba3 == "Renda"
+    
+    valor_total <- if (eh_renda) sum(df_filtro$renda_num, na.rm = TRUE) else sum(df_filtro$publico_num, na.rm = TRUE)
+    valor_top5 <- if (nrow(df_top) > 0) sum(head(df_top$valor, 5), na.rm = TRUE) else 0
+    participacao_top5 <- if (valor_total > 0) 100 * valor_top5 / valor_total else 0
+    
+    lider <- if (nrow(df_top) > 0) df_top$dist_clean[1] else "Sem dados"
+    valor_lider <- if (nrow(df_top) > 0) df_top$valor[1] else 0
+    
+    formatado <- function(x) {
+      format(round(x, if (eh_renda) 2 else 0), big.mark = ".", decimal.mark = ",", nsmall = if (eh_renda) 2 else 0, scientific = FALSE, trim = TRUE)
+    }
+    
+    layout_columns(
+      col_widths = c(4, 4, 4),
+      div(
+        class = "kpi-box",
+        div(class = "kpi-label", "Líder no recorte"),
+        div(class = "kpi-valor", lider),
+        div(class = "kpi-sub", if (eh_renda) paste0("R$ ", formatado(valor_lider)) else paste0(formatado(valor_lider), " espectadores"))
+      ),
+      div(
+        class = "kpi-box",
+        div(class = "kpi-label", "Concentração das 5 maiores"),
+        div(class = "kpi-valor", paste0(format(round(participacao_top5, 1), decimal.mark = ","), "%")),
+        div(class = "kpi-sub", paste0("Do total de ", tolower(input$metrica_aba3), " no período"))
+      ),
+      div(
+        class = "kpi-box",
+        div(class = "kpi-label", "Distribuidoras ativas"),
+        div(class = "kpi-valor", n_distinct(df_filtro$dist_clean)),
+        div(class = "kpi-sub", "Com registros válidos no recorte")
+      )
+    )
+  })
+  
+  output$tabela_distribuidoras <- renderTable({
+    df <- distribuidores_aba3()
+    if (nrow(df) == 0) return(data.frame(Aviso = "Nenhum registro encontrado para os filtros selecionados."))
+    
+    df %>%
+      transmute(
+        `#` = row_number(),
+        Distribuidora = dist_clean,
+        Origem = origem,
+        Filmes = filmes,
+        Público = format(round(publico, 0), big.mark = ".", decimal.mark = ",", scientific = FALSE, trim = TRUE),
+        `Renda (R$)` = format(round(renda, 2), big.mark = ".", decimal.mark = ",", nsmall = 2, scientific = FALSE, trim = TRUE)
+      )
+  }, striped = TRUE, bordered = FALSE, hover = TRUE, spacing = "s", rownames = FALSE, width = "100%")
   
   output$baixar_tabela <- downloadHandler(
     filename = function() {
