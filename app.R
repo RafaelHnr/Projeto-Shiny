@@ -7,42 +7,63 @@ library(plotly)
 
 dados_prontos <- readRDS("Dados Tratados/dados_prontos.rds")
 
-# Identidade visual
+# Identidade visual: Paleta 1 Normal (60% Neblina de Folha, 30% Folha Noturna, 10% Coral Dália)
 tema <- bs_theme(
   version = 5,
-  bootswatch = "darkly",
-  bg = "#151923",
-  fg = "#F5F5F5",
-  primary = "#D9A85F"
+  bg = "#DCE6DF",
+  fg = "#1D2A26",
+  primary = "#1D2A26",
+  secondary = "#FF4E6B"
 )
 
 ui <- page_navbar(
   title = "CINE.DADOS",
   id = "pagina",
   theme = tema,
+  bg = "#C5D5CA",
   
   header = tags$head(
     tags$style(HTML("
       html { scroll-behavior: smooth; }
+      body { background-color: #DCE6DF !important; color: #1D2A26 !important; }
 
-      /* Hero estilo tela de abertura de site */
+      /* Navbar */
+      .navbar {
+        background-color: #C5D5CA !important;
+        border-bottom: 2px solid #B0C4B7 !important;
+      }
+      .navbar-brand {
+        color: #1D2A26 !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.8px;
+      }
+      .nav-link {
+        color: #2C3E38 !important;
+        font-weight: 600;
+      }
+      .nav-link.active {
+        color: #1D2A26 !important;
+        border-bottom: 3px solid #FF4E6B !important;
+      }
+
+      /* Hero estilo tela de abertura */
       .hero {
-        background: radial-gradient(circle at top right, #2A3344 0%, #151923 70%);
+        background: radial-gradient(circle at top right, rgba(255, 78, 107, 0.12) 0%, #C5D5CA 72%);
         padding: 85px 40px;
         border-radius: 24px;
         margin-top: 15px;
         margin-bottom: 60px;
         text-align: center;
-        border: 1px solid rgba(217, 168, 95, 0.25);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        border: 1.5px solid #B0C4B7;
+        box-shadow: 0 18px 45px rgba(29, 42, 38, 0.10);
       }
       .hero .tag-topo {
         display: inline-block;
-        background: rgba(217, 168, 95, 0.15);
-        color: #D9A85F;
+        background: #1D2A26;
+        color: #C5D5CA;
         padding: 6px 16px;
         border-radius: 30px;
-        font-weight: 700;
+        font-weight: 800;
         letter-spacing: 2px;
         font-size: 12px;
         margin-bottom: 18px;
@@ -50,13 +71,13 @@ ui <- page_navbar(
       .hero h1 {
         font-size: 52px;
         font-weight: 800;
-        color: #FFFFFF;
+        color: #1D2A26;
         margin-bottom: 18px;
         letter-spacing: -1px;
       }
       .hero p {
         font-size: 18px;
-        color: #C5C9D3;
+        color: #2E3F39;
         max-width: 720px;
         margin: 0 auto 35px auto;
         line-height: 1.7;
@@ -69,9 +90,9 @@ ui <- page_navbar(
         padding: 0 15px;
       }
       .subtitulo-dourado {
-        color: #D9A85F;
+        color: #D93854;
         font-size: 13px;
-        font-weight: 700;
+        font-weight: 800;
         letter-spacing: 2px;
         text-transform: uppercase;
         margin-bottom: 8px;
@@ -79,12 +100,12 @@ ui <- page_navbar(
       .titulo-editorial {
         font-size: 32px;
         font-weight: 700;
-        color: #FFFFFF;
+        color: #1D2A26;
         margin-bottom: 20px;
       }
       .texto-editorial {
         font-size: 16px;
-        color: #C5C9D3;
+        color: #2C3E38;
         line-height: 1.8;
       }
 
@@ -95,19 +116,19 @@ ui <- page_navbar(
         flex-wrap: wrap;
         gap: 20px;
         padding: 35px 20px;
-        border-top: 1px solid #283040;
-        border-bottom: 1px solid #283040;
+        border-top: 1px solid #B0C4B7;
+        border-bottom: 1px solid #B0C4B7;
         margin-bottom: 75px;
         text-align: center;
       }
       .numero-item h2 {
         font-size: 38px;
         font-weight: 800;
-        color: #D9A85F;
+        color: #1D2A26;
         margin: 0;
       }
       .numero-item p {
-        color: #9CA3AF;
+        color: #3D524B;
         margin: 5px 0 0 0;
         font-size: 14px;
       }
@@ -121,12 +142,12 @@ ui <- page_navbar(
       }
       .var-pill {
         grid-column: span 2;
-        background: #1E2430;
-        border: 1px solid #323B4B;
+        background: #C5D5CA;
+        border: 1px solid #B0C4B7;
         padding: 18px 18px;
         border-radius: 14px;
         font-size: 13.5px;
-        color: #D0D3DA;
+        color: #2C3E38;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -137,11 +158,12 @@ ui <- page_navbar(
         grid-column: 2 / span 2;
       }
       .var-pill:hover {
-        border-color: #D9A85F;
+        border-color: #FF4E6B;
+        background: #EFF4F0;
         transform: translateY(-3px);
       }
       .var-pill strong {
-        color: #D9A85F;
+        color: #1D2A26;
         font-size: 14.5px;
         margin-bottom: 6px;
       }
@@ -155,10 +177,22 @@ ui <- page_navbar(
         }
       }
 
+      /* Sidebar e Cards */
+      .bslib-sidebar-layout > .sidebar {
+        background-color: #C5D5CA !important;
+        border-right: 1px solid #B0C4B7 !important;
+        color: #1D2A26 !important;
+      }
       .card {
-        background-color: #1E2430 !important;
-        border: 1px solid #323B4B !important;
+        background-color: #EFF4F0 !important;
+        border: 1px solid #B0C4B7 !important;
         overflow: visible !important;
+        box-shadow: 0 6px 20px rgba(29, 42, 38, 0.06);
+      }
+      .card-header {
+        background-color: #1D2A26 !important;
+        border-bottom: 1px solid #16211E !important;
+        color: #EFF4F0 !important;
       }
       .card-body {
         overflow: visible !important;
@@ -166,45 +200,91 @@ ui <- page_navbar(
 
       /* Caixa fixa de texto genérico acima do gráfico */
       .aviso-fixo-grafico {
-        background: rgba(30, 36, 48, 0.85);
-        border-left: 4px solid #D9A85F;
-        border-top: 1px solid #323B4B;
-        border-right: 1px solid #323B4B;
-        border-bottom: 1px solid #323B4B;
+        background: #C5D5CA;
+        border-left: 4px solid #FF4E6B;
+        border-top: 1px solid #B0C4B7;
+        border-right: 1px solid #B0C4B7;
+        border-bottom: 1px solid #B0C4B7;
         padding: 14px 20px;
         border-radius: 10px;
-        color: #D0D3DA;
+        color: #1D2A26;
         font-size: 14.5px;
         line-height: 1.5;
         margin-bottom: 15px;
       }
+      .aviso-fixo-grafico strong {
+        color: #1D2A26;
+      }
 
       /* Cartões de resumo */
       .kpi-box {
-        background: #1E2430;
-        border: 1px solid #323B4B;
+        background: #EFF4F0;
+        border: 1px solid #B0C4B7;
+        border-top: 3px solid #FF4E6B;
         border-radius: 12px;
         padding: 18px 20px;
         height: 100%;
+        box-shadow: 0 4px 14px rgba(29, 42, 38, 0.05);
       }
       .kpi-label {
         font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 1px;
-        color: #9CA3AF;
+        color: #465E56;
         margin-bottom: 6px;
         font-weight: 700;
       }
       .kpi-valor {
         font-size: 22px;
         font-weight: 800;
-        color: #D9A85F;
+        color: #1D2A26;
         margin-bottom: 4px;
         word-break: break-word;
       }
       .kpi-sub {
         font-size: 13px;
-        color: #D0D3DA;
+        color: #2E3F39;
+      }
+
+      /* Botões personalizados */
+      .btn-destaque-coral {
+        background-color: #FF4E6B !important;
+        border-color: #FF4E6B !important;
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+      }
+      .btn-destaque-coral:hover {
+        background-color: #E63E5A !important;
+        border-color: #E63E5A !important;
+      }
+      .btn-borda-noturna {
+        border: 1.5px solid #1D2A26 !important;
+        color: #1D2A26 !important;
+        background: transparent !important;
+        font-weight: 700 !important;
+      }
+      .btn-borda-noturna:hover {
+        background: #1D2A26 !important;
+        color: #EFF4F0 !important;
+      }
+
+      /* Inputs marcados em Folha Noturna */
+      .form-check-input:checked {
+        background-color: #1D2A26 !important;
+        border-color: #1D2A26 !important;
+      }
+
+      /* Tabela clara */
+      .table {
+        color: #1D2A26 !important;
+      }
+      .table thead th {
+        color: #1D2A26 !important;
+        border-bottom: 2px solid #1D2A26 !important;
+      }
+      .table-striped > tbody > tr:nth-of-type(odd) > * {
+        background-color: #DFE9E2 !important;
+        color: #1D2A26 !important;
       }
     "))
   ),
@@ -227,12 +307,12 @@ ui <- page_navbar(
         actionButton(
           "explorar",
           "Explorar os gráficos →",
-          class = "btn btn-primary btn-lg",
-          style = "color: #151923; font-weight: 800; border-radius: 30px; padding: 12px 30px;"
+          class = "btn btn-destaque-coral btn-lg",
+          style = "border-radius: 30px; padding: 12px 30px;"
         ),
         tags$a(
           href = "#sobre-projeto",
-          class = "btn btn-outline-light btn-lg",
+          class = "btn btn-borda-noturna btn-lg",
           style = "border-radius: 30px; padding: 12px 28px;",
           "Ler sobre o projeto ↓"
         )
@@ -266,7 +346,7 @@ ui <- page_navbar(
           )
         ),
         div(
-          style = "padding-left: 20px; border-left: 1px solid #283040;",
+          style = "padding-left: 20px; border-left: 1px solid #B0C4B7;",
           div(class = "subtitulo-dourado", "BASTIDORES"),
           h2(class = "titulo-editorial", "Metodologia"),
           p(class = "texto-editorial",
@@ -312,7 +392,6 @@ ui <- page_navbar(
       fillable = FALSE,
       sidebar = sidebar(
         width = 280,
-        bg = "#1E2430",
         title = "Filtros da Análise",
         
         selectInput(
@@ -342,7 +421,7 @@ ui <- page_navbar(
         downloadButton(
           outputId = "baixar_tabela",
           label = "Baixar dados filtrados (.csv)",
-          class = "btn-warning w-100"
+          class = "btn-destaque-coral w-100"
         )
       ),
       
@@ -354,7 +433,7 @@ ui <- page_navbar(
       
       card(
         card_header(
-          style = "font-size: 17px; font-weight: 700; color: #D9A85F;",
+          style = "font-size: 17px; font-weight: 700; color: #EFF4F0;",
           textOutput("titulo_grafico_aba2", inline = TRUE)
         ),
         plotlyOutput("grafico_evolucao", height = "460px", width = "100%")
@@ -370,10 +449,9 @@ ui <- page_navbar(
   nav_panel(
     "Distribuidoras",
     layout_sidebar(
-      fillable = FALSE, # Impede o gráfico de esticar/encolher conforme o tamanho da tabela
+      fillable = FALSE,
       sidebar = sidebar(
         width = 280,
-        bg = "#1E2430",
         title = "Filtros da análise",
         sliderInput(
           inputId = "periodo_aba3",
@@ -414,14 +492,14 @@ ui <- page_navbar(
       div(
         class = "aviso-fixo-grafico",
         strong("Como explorar este painel: "),
-        "Escolha o período, o perfil dos filmes e se quer comparar as distribuidoras por público ou renda. O ranking mostra as maiores no recorte; os indicadores resumem a concentração dos resultados."
+        "Escolha o período, o perfil dos filmes e se quer comparar as distribuidoras por público ou renda. As barras em rosa (Coral Dália) destacam as distribuidoras de capital nacional, enquanto as em verde-escuro (Folha Noturna) representam o capital estrangeiro."
       ),
       
       uiOutput("resumo_kpis_aba3"),
       
       card(
         card_header(
-          style = "font-size: 17px; font-weight: 700; color: #D9A85F;",
+          style = "font-size: 17px; font-weight: 700; color: #EFF4F0;",
           textOutput("titulo_grafico_aba3", inline = TRUE)
         ),
         plotlyOutput("grafico_distribuidoras", height = "460px", width = "100%")
@@ -490,8 +568,8 @@ server <- function(input, output, session) {
     df <- dados_grafico()
     eh_dinheiro <- input$indicador == "Dinheiro Arrecadado"
     
-    cores <- c("Brasileira" = "#D9A85F", "Estrangeira" = "#4EA8DE")
-    preenchimentos <- c("Brasileira" = "rgba(217, 168, 95, 0.16)", "Estrangeira" = "rgba(78, 168, 222, 0.16)")
+    cores <- c("Brasileira" = "#1D2A26", "Estrangeira" = "#FF4E6B")
+    preenchimentos <- c("Brasileira" = "rgba(29, 42, 38, 0.14)", "Estrangeira" = "rgba(255, 78, 107, 0.14)")
     
     p <- plot_ly(height = 460)
     
@@ -531,29 +609,29 @@ server <- function(input, output, session) {
     
     p %>%
       layout(
-        paper_bgcolor = "#1E2430",
-        plot_bgcolor = "#1E2430",
+        paper_bgcolor = "#EFF4F0",
+        plot_bgcolor = "#EFF4F0",
         margin = list(l = 85, r = 25, t = 20, b = 70),
         hovermode = "x unified",
         hoverlabel = list(
-          bgcolor = "#151923",
-          bordercolor = "#D9A85F",
-          font = list(color = "#F5F5F5", size = 13)
+          bgcolor = "#1D2A26",
+          bordercolor = "#FF4E6B",
+          font = list(color = "#EFF4F0", size = 13)
         ),
         xaxis = list(
-          title = list(text = "Ano de Exibição", font = list(color = "#FFFFFF", size = 14)),
-          tickfont = list(color = "#D0D3DA", size = 12),
-          gridcolor = "#283040",
+          title = list(text = "Ano de Exibição", font = list(color = "#1D2A26", size = 14)),
+          tickfont = list(color = "#2E3F39", size = 12),
+          gridcolor = "#D6E2DA",
           zeroline = FALSE,
           fixedrange = TRUE
         ),
         yaxis = list(
           title = list(
             text = if (eh_dinheiro) "Dinheiro Arrecadado (R$)" else "Quantidade de Espectadores",
-            font = list(color = "#FFFFFF", size = 14)
+            font = list(color = "#1D2A26", size = 14)
           ),
-          tickfont = list(color = "#D0D3DA", size = 12),
-          gridcolor = "#323B4B",
+          tickfont = list(color = "#2E3F39", size = 12),
+          gridcolor = "#CEDCD3",
           zeroline = FALSE,
           separatethousands = TRUE,
           fixedrange = TRUE
@@ -563,7 +641,7 @@ server <- function(input, output, session) {
           x = 0.5,
           xanchor = "center",
           y = -0.16,
-          font = list(color = "#F5F5F5", size = 13)
+          font = list(color = "#1D2A26", size = 13)
         )
       ) %>%
       config(displayModeBar = FALSE, responsive = TRUE)
@@ -611,14 +689,13 @@ server <- function(input, output, session) {
   })
   
   # ==========================================
-  # LÓGICA DA ABA 3 (CORRIGIDA)
+  # LÓGICA DA ABA 3 (CORAL DÁLIA PARA NACIONAL E FOLHA NOTURNA PARA ESTRANGEIRA)
   # ==========================================
   dados_aba3 <- reactive({
     req(input$periodo_aba3, input$nacionalidade_aba3, input$genero_aba3)
     
     df <- dados_prontos %>%
       mutate(
-        # as.character() antes de as.integer() evita o bug de fator!
         ano_num = suppressWarnings(as.integer(as.character(ano_de_exibicao))),
         dist_clean = trimws(as.character(empresa_distribuidora)),
         origem_clean = trimws(as.character(origem_da_empresa_distribuidora)),
@@ -655,7 +732,6 @@ server <- function(input, output, session) {
     df_base <- dados_aba3()
     if (nrow(df_base) == 0) return(tibble())
     
-    # Agrupa APENAS pela distribuidora para evitar nomes duplicados no eixo Y
     df <- df_base %>%
       group_by(dist_clean) %>%
       summarise(
@@ -667,6 +743,13 @@ server <- function(input, output, session) {
       ) %>%
       mutate(
         origem = ifelse(origem == "", "Não informada", origem),
+        categoria_cor = case_when(
+          grepl("Nacional", origem, ignore.case = TRUE) & grepl("Estrangeir|Codistrib", origem, ignore.case = TRUE) ~ "Mista / Codistribuição",
+          grepl("Codistrib", origem, ignore.case = TRUE) ~ "Mista / Codistribuição",
+          grepl("Nacional", origem, ignore.case = TRUE) ~ "Capital Nacional",
+          grepl("Estrangeir", origem, ignore.case = TRUE) ~ "Capital Estrangeiro",
+          TRUE ~ "Outras / ND"
+        ),
         valor = if (input$metrica_aba3 == "Público") publico else renda
       ) %>%
       arrange(desc(valor), dist_clean)
@@ -686,20 +769,19 @@ server <- function(input, output, session) {
   output$grafico_distribuidoras <- renderPlotly({
     df <- distribuidores_aba3()
     
-    # Se o filtro não retornar nenhuma linha, exibe aviso limpo no próprio gráfico
     if (nrow(df) == 0) {
       return(
         plot_ly(height = 460) %>%
           layout(
-            paper_bgcolor = "#1E2430",
-            plot_bgcolor = "#1E2430",
+            paper_bgcolor = "#EFF4F0",
+            plot_bgcolor = "#EFF4F0",
             xaxis = list(visible = FALSE),
             yaxis = list(visible = FALSE),
             annotations = list(
               text = "Nenhum registro encontrado para essa combinação de filtros.",
               xref = "paper", yref = "paper", x = 0.5, y = 0.5,
               showarrow = FALSE,
-              font = list(color = "#D9A85F", size = 16)
+              font = list(color = "#1D2A26", size = 16)
             )
           ) %>%
           config(displayModeBar = FALSE)
@@ -710,7 +792,6 @@ server <- function(input, output, session) {
     
     df <- df %>%
       mutate(
-        # Abrevia nomes gigantes no eixo Y para o gráfico nunca encolher lateralmente
         nome_curto = ifelse(nchar(dist_clean) > 26, paste0(substr(dist_clean, 1, 24), "..."), dist_clean),
         rotulo = if (eh_renda) {
           paste0("R$ ", format(round(valor, 2), big.mark = ".", decimal.mark = ",", nsmall = 2, trim = TRUE))
@@ -726,33 +807,54 @@ server <- function(input, output, session) {
       ) %>%
       arrange(valor)
     
-    # Garante níveis únicos no eixo Y mesmo se dois nomes curtos coincidirem
     df$nome_curto <- make.unique(df$nome_curto)
-    df$nome_curto <- factor(df$nome_curto, levels = df$nome_curto)
+    niveis_y <- df$nome_curto
     
-    plot_ly(
-      data = df,
-      x = ~valor,
-      y = ~nome_curto,
-      type = "bar",
-      orientation = "h",
-      height = 460,
-      marker = list(color = "#D9A85F"),
-      text = ~dica,
-      textposition = "none", # Evita que o texto HTML apareça escrito dentro das barras!
-      hoverinfo = "text"
-    ) %>%
+    # Coral Dália (#FF4E6B) para Capital Nacional | Folha Noturna (#1D2A26) para Capital Estrangeiro
+    mapa_cores <- c(
+      "Capital Nacional" = "#FF4E6B",
+      "Capital Estrangeiro" = "#1D2A26",
+      "Mista / Codistribuição" = "#557A6D",
+      "Outras / ND" = "#8FA39B"
+    )
+    
+    p <- plot_ly(height = 460)
+    
+    for (cat in unique(df$categoria_cor)) {
+      sub_df <- df %>% filter(categoria_cor == cat)
+      cor_barra <- if (cat %in% names(mapa_cores)) mapa_cores[[cat]] else "#FF4E6B"
+      
+      p <- p %>%
+        add_trace(
+          data = sub_df,
+          x = ~valor,
+          y = ~factor(nome_curto, levels = niveis_y),
+          name = cat,
+          type = "bar",
+          orientation = "h",
+          marker = list(
+            color = cor_barra,
+            line = list(width = 0)
+          ),
+          text = ~dica,
+          textposition = "none",
+          hoverinfo = "text"
+        )
+    }
+    
+    p %>%
       layout(
-        paper_bgcolor = "#1E2430",
-        plot_bgcolor = "#1E2430",
-        margin = list(l = 185, r = 30, t = 15, b = 65),
+        barmode = "overlay",
+        paper_bgcolor = "#EFF4F0",
+        plot_bgcolor = "#EFF4F0",
+        margin = list(l = 185, r = 30, t = 15, b = 75),
         xaxis = list(
           title = list(
             text = if (eh_renda) "Renda acumulada (R$)" else "Público acumulado (espectadores)",
-            font = list(color = "#FFFFFF", size = 14)
+            font = list(color = "#1D2A26", size = 14)
           ),
-          tickfont = list(color = "#D0D3DA", size = 12),
-          gridcolor = "#323B4B",
+          tickfont = list(color = "#2E3F39", size = 12),
+          gridcolor = "#CEDCD3",
           zeroline = FALSE,
           separatethousands = TRUE,
           tickprefix = if (eh_renda) "R$ " else "",
@@ -760,13 +862,22 @@ server <- function(input, output, session) {
         ),
         yaxis = list(
           title = "",
-          tickfont = list(color = "#D0D3DA", size = 12),
+          categoryorder = "array",
+          categoryarray = niveis_y,
+          tickfont = list(color = "#1D2A26", size = 12),
           fixedrange = TRUE
         ),
+        legend = list(
+          orientation = "h",
+          x = 0.5,
+          xanchor = "center",
+          y = -0.18,
+          font = list(color = "#1D2A26", size = 13)
+        ),
         hoverlabel = list(
-          bgcolor = "#151923",
-          bordercolor = "#D9A85F",
-          font = list(color = "#F5F5F5", size = 13)
+          bgcolor = "#1D2A26",
+          bordercolor = "#FF4E6B",
+          font = list(color = "#EFF4F0", size = 13)
         )
       ) %>%
       config(displayModeBar = FALSE, responsive = TRUE)
