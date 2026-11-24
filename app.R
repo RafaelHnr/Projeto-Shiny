@@ -163,6 +163,48 @@ ui <- page_navbar(
       .card-body {
         overflow: visible !important;
       }
+
+      /* Caixa fixa de texto genérico acima do gráfico */
+      .aviso-fixo-grafico {
+        background: rgba(30, 36, 48, 0.85);
+        border-left: 4px solid #D9A85F;
+        border-top: 1px solid #323B4B;
+        border-right: 1px solid #323B4B;
+        border-bottom: 1px solid #323B4B;
+        padding: 14px 20px;
+        border-radius: 10px;
+        color: #D0D3DA;
+        font-size: 14.5px;
+        line-height: 1.5;
+        margin-bottom: 15px;
+      }
+
+      /* Cartões de resumo que substituem a tabela */
+      .kpi-box {
+        background: #1E2430;
+        border: 1px solid #323B4B;
+        border-radius: 12px;
+        padding: 18px 20px;
+        height: 100%;
+      }
+      .kpi-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #9CA3AF;
+        margin-bottom: 6px;
+        font-weight: 700;
+      }
+      .kpi-valor {
+        font-size: 24px;
+        font-weight: 800;
+        color: #D9A85F;
+        margin-bottom: 4px;
+      }
+      .kpi-sub {
+        font-size: 13px;
+        color: #D0D3DA;
+      }
     "))
   ),
   
@@ -260,13 +302,13 @@ ui <- page_navbar(
   ),
   
   # ==========================================
-  # ABA 2: GRÁFICO 100% VISÍVEL SEM BARRA INTERNA
+  # ABA 2: TEXTO FIXO + GRÁFICO + RESUMO KPI
   # ==========================================
   nav_panel(
     "Evolução do Cinema ao Longo dos Anos",
     
     layout_sidebar(
-      fillable = FALSE, # Impede que o card esprema o gráfico e crie barra de rolagem interna!
+      fillable = FALSE,
       sidebar = sidebar(
         width = 280,
         bg = "#1E2430",
@@ -275,8 +317,8 @@ ui <- page_navbar(
         selectInput(
           inputId = "genero",
           label = "1. Selecione o gênero:",
-          choices = sort(unique(dados_prontos$genero)),
-          selected = "Animação",
+          choices = c("Todos", sort(unique(dados_prontos$genero))),
+          selected = "Todos",
           multiple = FALSE
         ),
         
@@ -303,19 +345,24 @@ ui <- page_navbar(
         )
       ),
       
-      # Gráfico inteiro visível de ponta a ponta sem barra de rolagem interna
+      # 1. CAIXINHA FIXA GENÉRICA ACIMA DO GRÁFICO
+      div(
+        class = "aviso-fixo-grafico",
+        strong("Como explorar este painel: "),
+        "Utilize os filtros à esquerda para alternar o gênero cinematográfico (ou visualizar todos juntos), a métrica de desempenho e a origem das obras. Passe o cursor sobre qualquer ponto do gráfico para visualizar os valores exatos de cada ano e observe o impacto da retração de 2020–2021."
+      ),
+      
+      # 2. GRÁFICO INTERATIVO (OUTPUT 1)
       card(
         card_header(
           style = "font-size: 17px; font-weight: 700; color: #D9A85F;",
           textOutput("titulo_grafico_aba2", inline = TRUE)
         ),
-        plotlyOutput("grafico_evolucao", height = "480px", width = "100%")
+        plotlyOutput("grafico_evolucao", height = "460px", width = "100%")
       ),
       
-      card(
-        card_header(strong("Resultados Consolidados por Ano e Nacionalidade")),
-        tableOutput(outputId = "tabela_evolucao")
-      )
+      # 3. CARTÕES DE INDICADORES-CHAVE (OUTPUT 2)
+      uiOutput("resumo_kpis_aba2")
     )
   ),
   
@@ -358,64 +405,58 @@ server <- function(input, output, session) {
     nav_select("pagina", "Evolução do Cinema ao Longo dos Anos")
   })
   
-  dados_grafico <- reactive({
-    req(input$genero, input$indicador, input$nacionalidade)
+  # Base filtrada (suporta tanto "Todos" quanto um gênero específico)
+  dados_filtrados_base <- reactive({
+    req(input$genero, input$nacionalidade)
     
-    dados_filtrados <- dados_prontos %>%
-      filter(
-        genero == input$genero,
-        nacionalidade_da_obra %in% input$nacionalidade
-      )
+    dados_temp <- dados_prontos %>%
+      filter(nacionalidade_da_obra %in% input$nacionalidade)
     
-    if (input$indicador == "Público") {
-      valores <- dados_filtrados$publico_no_ano_de_exibicao
-    } else {
-      valores <- dados_filtrados$renda_r_no_ano_de_exibicao
+    if (input$genero != "Todos") {
+      dados_temp <- dados_temp %>% filter(genero == input$genero)
     }
     
-    dados_filtrados$valor <- parse_number(
-      as.character(valores),
-      locale = locale(decimal_mark = ",", grouping_mark = ".")
-    )
-    
-    anos_completos <- as.character(2009:2025)
-    
-    resumo <- dados_filtrados %>%
-      mutate(ano_de_exibicao = as.character(ano_de_exibicao)) %>%
-      group_by(ano_de_exibicao, nacionalidade_da_obra) %>%
-      summarise(
-        valor = sum(valor, na.rm = TRUE),
-        .groups = "drop"
+    dados_temp %>%
+      mutate(
+        ano_de_exibicao = as.character(ano_de_exibicao),
+        pub_num = parse_number(as.character(publico_no_ano_de_exibicao),
+                               locale = locale(decimal_mark = ",", grouping_mark = ".")),
+        renda_num = parse_number(as.character(renda_r_no_ano_de_exibicao),
+                                 locale = locale(decimal_mark = ",", grouping_mark = "."))
       )
+  })
+  
+  dados_grafico <- reactive({
+    req(input$indicador)
+    
+    df <- dados_filtrados_base() %>%
+      mutate(valor_escolhido = if (input$indicador == "Público") pub_num else renda_num) %>%
+      group_by(ano_de_exibicao, nacionalidade_da_obra) %>%
+      summarise(valor = sum(valor_escolhido, na.rm = TRUE), .groups = "drop")
     
     expand.grid(
-      ano_de_exibicao = anos_completos,
+      ano_de_exibicao = as.character(2009:2025),
       nacionalidade_da_obra = input$nacionalidade,
       stringsAsFactors = FALSE
     ) %>%
-      left_join(resumo, by = c("ano_de_exibicao", "nacionalidade_da_obra")) %>%
+      left_join(df, by = c("ano_de_exibicao", "nacionalidade_da_obra")) %>%
       mutate(valor = ifelse(is.na(valor), 0, valor))
   })
   
   output$titulo_grafico_aba2 <- renderText({
-    paste0(input$indicador, " — Gênero: ", input$genero, " (2009–2025)")
+    nome_gen <- if (input$genero == "Todos") "Todos os Gêneros" else paste0("Gênero: ", input$genero)
+    paste0(input$indicador, " — ", nome_gen, " (2009–2025)")
   })
   
+  # Output 1: Gráfico Interativo
   output$grafico_evolucao <- renderPlotly({
     df <- dados_grafico()
     eh_dinheiro <- input$indicador == "Dinheiro Arrecadado"
     
-    cores <- c(
-      "Brasileira" = "#D9A85F",
-      "Estrangeira" = "#4EA8DE"
-    )
+    cores <- c("Brasileira" = "#D9A85F", "Estrangeira" = "#4EA8DE")
+    preenchimentos <- c("Brasileira" = "rgba(217, 168, 95, 0.16)", "Estrangeira" = "rgba(78, 168, 222, 0.16)")
     
-    preenchimentos <- c(
-      "Brasileira" = "rgba(217, 168, 95, 0.16)",
-      "Estrangeira" = "rgba(78, 168, 222, 0.16)"
-    )
-    
-    p <- plot_ly(height = 480)
+    p <- plot_ly(height = 460)
     
     for (nac in unique(df$nacionalidade_da_obra)) {
       sub_df <- df %>% filter(nacionalidade_da_obra == nac)
@@ -488,29 +529,58 @@ server <- function(input, output, session) {
           font = list(color = "#F5F5F5", size = 13)
         )
       ) %>%
-      config(
-        displayModeBar = FALSE,
-        responsive = TRUE
-      )
+      config(displayModeBar = FALSE, responsive = TRUE)
   })
   
-  output$tabela_evolucao <- renderTable({
-    tabela <- dados_grafico()
-    names(tabela) <- c("Ano", "Nacionalidade", "Total")
+  # Output 2: 3 Cartões de Indicadores Estratégicos
+  output$resumo_kpis_aba2 <- renderUI({
+    df_graf <- dados_grafico()
+    df_base <- dados_filtrados_base()
+    eh_dinheiro <- input$indicador == "Dinheiro Arrecadado"
     
-    tabela$Total <- format(
-      tabela$Total,
-      big.mark = ".",
-      decimal.mark = ",",
-      scientific = FALSE,
-      trim = TRUE
+    # 1. Ano de Pico
+    linha_pico <- df_graf %>% arrange(desc(valor)) %>% slice(1)
+    valor_pico_fmt <- format(round(linha_pico$valor, 0), big.mark = ".", decimal.mark = ",", scientific = FALSE, trim = TRUE)
+    texto_pico <- if (eh_dinheiro) paste0("R$ ", valor_pico_fmt) else paste0(valor_pico_fmt, " espectadores")
+    
+    # 2. Participação do Cinema Nacional no recorte
+    total_geral <- sum(df_graf$valor, na.rm = TRUE)
+    total_br <- sum(df_graf$valor[df_graf$nacionalidade_da_obra == "Brasileira"], na.rm = TRUE)
+    share_br <- if (total_geral > 0) round((total_br / total_geral) * 100, 1) else 0
+    
+    # 3. Ticket Médio (Renda Total / Público Total no filtro atual)
+    pub_tot <- sum(df_base$pub_num, na.rm = TRUE)
+    renda_tot <- sum(df_base$renda_num, na.rm = TRUE)
+    ticket <- if (pub_tot > 0) renda_tot / pub_tot else 0
+    ticket_fmt <- format(round(ticket, 2), big.mark = ".", decimal.mark = ",", nsmall = 2, trim = TRUE)
+    
+    layout_columns(
+      col_widths = c(4, 4, 4),
+      div(
+        class = "kpi-box",
+        div(class = "kpi-label", "Recorde Histórico no Período"),
+        div(class = "kpi-valor", paste0(linha_pico$ano_de_exibicao, " (", linha_pico$nacionalidade_da_obra, ")")),
+        div(class = "kpi-sub", texto_pico)
+      ),
+      div(
+        class = "kpi-box",
+        div(class = "kpi-label", "Fatia das Obras Brasileiras"),
+        div(class = "kpi-valor", paste0(format(share_br, decimal.mark = ","), "%")),
+        div(class = "kpi-sub", paste0("Do total acumulado de ", tolower(input$indicador), " no recorte"))
+      ),
+      div(
+        class = "kpi-box",
+        div(class = "kpi-label", "Ticket Médio Estimado"),
+        div(class = "kpi-valor", paste0("R$ ", ticket_fmt)),
+        div(class = "kpi-sub", "Razão entre renda total e público no recorte")
+      )
     )
-    tabela
-  }, striped = TRUE, hover = TRUE, bordered = TRUE, rownames = FALSE, width = "100%")
+  })
   
   output$baixar_tabela <- downloadHandler(
     filename = function() {
-      paste0("cinema_brasil_", tolower(input$genero), ".csv")
+      nome_arquivo <- if (input$genero == "Todos") "todos_generos" else tolower(input$genero)
+      paste0("cinema_brasil_", nome_arquivo, ".csv")
     },
     content = function(file) {
       write.csv2(dados_grafico(), file, row.names = FALSE)
