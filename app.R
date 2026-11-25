@@ -7,7 +7,6 @@ library(plotly)
 
 dados_prontos <- readRDS("Dados Tratados/dados_prontos.rds")
 
-# Identidade visual: Paleta 1 Normal (60% Neblina de Folha, 30% Folha Noturna, 10% Coral Dália)
 tema <- bs_theme(
   version = 5,
   bg = "#DCE6DF",
@@ -289,9 +288,6 @@ ui <- page_navbar(
     "))
   ),
   
-  # ==========================================
-  # ABA 1: APRESENTAÇÃO ESTILO SITE (SCROLL)
-  # ==========================================
   nav_panel(
     "Apresentação dos Dados",
     
@@ -382,9 +378,6 @@ ui <- page_navbar(
     )
   ),
   
-  # ==========================================
-  # ABA 2: TEXTO FIXO + GRÁFICO + RESUMO KPI
-  # ==========================================
   nav_panel(
     "Retrospectiva do Cinema no Brasil ao Longo dos Anos",
     
@@ -443,9 +436,6 @@ ui <- page_navbar(
     )
   ),
   
-  # ==========================================
-  # ABA 3: DISTRIBUIDORAS E CONCENTRAÇÃO
-  # ==========================================
   nav_panel(
     "Panorama das Distribuidoras",
     layout_sidebar(
@@ -492,7 +482,7 @@ ui <- page_navbar(
       div(
         class = "aviso-fixo-grafico",
         strong("Como explorar este painel: "),
-        "Escolha o período, o perfil dos filmes e se quer comparar as distribuidoras por público ou renda. As barras em rosa (Coral Dália) destacam as distribuidoras de capital nacional, enquanto as em verde-escuro (Folha Noturna) representam o capital estrangeiro."
+        "Escolha o período, o perfil dos filmes e se quer comparar as distribuidoras por público ou renda. As barras em rosa destacam as distribuidoras de capital nacional, enquanto as em verde-escuro representam o capital estrangeiro."
       ),
       
       uiOutput("resumo_kpis_aba3"),
@@ -688,9 +678,6 @@ server <- function(input, output, session) {
     )
   })
   
-  # ==========================================
-  # LÓGICA DA ABA 3 (CORAL DÁLIA PARA NACIONAL E FOLHA NOTURNA PARA ESTRANGEIRA)
-  # ==========================================
   dados_aba3 <- reactive({
     req(input$periodo_aba3, input$nacionalidade_aba3, input$genero_aba3)
     
@@ -810,7 +797,6 @@ server <- function(input, output, session) {
     df$nome_curto <- make.unique(df$nome_curto)
     niveis_y <- df$nome_curto
     
-    # Coral Dália (#FF4E6B) para Capital Nacional | Folha Noturna (#1D2A26) para Capital Estrangeiro
     mapa_cores <- c(
       "Capital Nacional" = "#FF4E6B",
       "Capital Estrangeiro" = "#1D2A26",
