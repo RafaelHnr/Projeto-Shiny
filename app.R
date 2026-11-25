@@ -1,3 +1,4 @@
+
 library(shiny)
 library(bslib)
 library(dplyr)
@@ -26,7 +27,6 @@ ui <- page_navbar(
       html { scroll-behavior: smooth; }
       body { background-color: #DCE6DF !important; color: #1D2A26 !important; }
 
-      /* Navbar */
       .navbar {
         background-color: #C5D5CA !important;
         border-bottom: 2px solid #B0C4B7 !important;
@@ -45,7 +45,6 @@ ui <- page_navbar(
         border-bottom: 3px solid #FF4E6B !important;
       }
 
-      /* Hero estilo tela de abertura */
       .hero {
         background: radial-gradient(circle at top right, rgba(255, 78, 107, 0.12) 0%, #C5D5CA 72%);
         padding: 85px 40px;
@@ -82,7 +81,6 @@ ui <- page_navbar(
         line-height: 1.7;
       }
 
-      /* Container centralizado para leitura orgânica ao rolar */
       .secao-editorial {
         max-width: 1120px;
         margin: 0 auto 75px auto;
@@ -108,7 +106,6 @@ ui <- page_navbar(
         line-height: 1.8;
       }
 
-      /* Destaques numéricos leves */
       .faixa-numeros {
         display: flex;
         justify-content: space-around;
@@ -132,7 +129,6 @@ ui <- page_navbar(
         font-size: 14px;
       }
 
-      /* Grade simétrica: 4 + 4 + 3 centralizados */
       .grade-variaveis {
         display: grid;
         grid-template-columns: repeat(8, 1fr);
@@ -176,7 +172,6 @@ ui <- page_navbar(
         }
       }
 
-      /* Sidebar e Cards */
       .bslib-sidebar-layout > .sidebar {
         background-color: #C5D5CA !important;
         border-right: 1px solid #B0C4B7 !important;
@@ -197,7 +192,6 @@ ui <- page_navbar(
         overflow: visible !important;
       }
 
-      /* Caixa fixa de texto genérico acima do gráfico */
       .aviso-fixo-grafico {
         background: #C5D5CA;
         border-left: 4px solid #FF4E6B;
@@ -215,7 +209,6 @@ ui <- page_navbar(
         color: #1D2A26;
       }
 
-      /* Cartões de resumo */
       .kpi-box {
         background: #EFF4F0;
         border: 1px solid #B0C4B7;
@@ -245,7 +238,6 @@ ui <- page_navbar(
         color: #2E3F39;
       }
 
-      /* Botões personalizados */
       .btn-destaque-coral {
         background-color: #FF4E6B !important;
         border-color: #FF4E6B !important;
@@ -267,13 +259,11 @@ ui <- page_navbar(
         color: #EFF4F0 !important;
       }
 
-      /* Inputs marcados em Folha Noturna */
       .form-check-input:checked {
         background-color: #1D2A26 !important;
         border-color: #1D2A26 !important;
       }
 
-      /* Tabela clara */
       .table {
         color: #1D2A26 !important;
       }
@@ -509,9 +499,6 @@ server <- function(input, output, session) {
     nav_select("pagina", "Retrospectiva do Cinema no Brasil ao Longo dos Anos")
   })
   
-  # ==========================================
-  # LÓGICA DA ABA 2
-  # ==========================================
   dados_filtrados_base <- reactive({
     req(input$genero, input$nacionalidade)
     
