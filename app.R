@@ -1,4 +1,3 @@
-
 library(shiny)
 library(bslib)
 library(dplyr)
@@ -275,6 +274,19 @@ ui <- page_navbar(
         background-color: #DFE9E2 !important;
         color: #1D2A26 !important;
       }
+    ")),
+    tags$script(HTML("
+      Shiny.addCustomMessageHandler('baixarGraficoAtual', function(nomeArquivo) {
+        var el = document.getElementById('grafico_evolucao');
+        if (el && typeof Plotly !== 'undefined') {
+          Plotly.downloadImage(el, {
+            format: 'png',
+            width: 1200,
+            height: 600,
+            filename: nomeArquivo
+          });
+        }
+      });
     "))
   ),
   
@@ -364,6 +376,15 @@ ui <- page_navbar(
         div(class = "var-pill", strong("Origem da Distribuidora"), "Capital Nacional, Estrangeiro ou Codistribuição"),
         div(class = "var-pill", strong("Público Anual"), "Total de espectadores registrados no ano"),
         div(class = "var-pill", strong("Renda Anual (R$)"), "Bilheteria bruta arrecadada em reais")
+      ),
+      div(
+        style = "text-align: center; margin-top: 40px;",
+        actionButton(
+          "explorar_rodape",
+          "Passar para a próxima página →",
+          class = "btn btn-destaque-coral btn-lg",
+          style = "border-radius: 30px; padding: 12px 30px;"
+        )
       )
     )
   ),
@@ -405,6 +426,13 @@ ui <- page_navbar(
           outputId = "baixar_tabela",
           label = "Baixar dados filtrados (.csv)",
           class = "btn-destaque-coral w-100"
+        ),
+        
+        actionButton(
+          inputId = "baixar_grafico",
+          label = "Baixar gráfico atual (.png)",
+          icon = icon("download"),
+          class = "btn-destaque-coral w-100 mt-2"
         )
       ),
       
@@ -497,6 +525,16 @@ server <- function(input, output, session) {
   
   observeEvent(input$explorar, {
     nav_select("pagina", "Retrospectiva do Cinema no Brasil ao Longo dos Anos")
+  })
+  
+  observeEvent(input$explorar_rodape, {
+    nav_select("pagina", "Retrospectiva do Cinema no Brasil ao Longo dos Anos")
+  })
+  
+  observeEvent(input$baixar_grafico, {
+    nome_gen <- if (input$genero == "Todos") "todos_generos" else tolower(input$genero)
+    nome_ind <- if (input$indicador == "Público") "publico" else "renda"
+    session$sendCustomMessage("baixarGraficoAtual", paste0("grafico_", nome_ind, "_", nome_gen))
   })
   
   dados_filtrados_base <- reactive({
